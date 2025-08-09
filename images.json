@@ -1,0 +1,16 @@
+[
+  {
+    "id": "cat-001",
+    "title": "Victorian Cat Engraving",
+    "url": "https://example.com/cat1.png",
+    "caption": "Public domain 19th-century engraving of a cat on a windowsill",
+    "tags": ["cat", "engraving", "vintage", "public domain"]
+  },
+  {
+    "id": "dog-002",
+    "title": "Watercolor Golden Retriever",
+    "url": "https://example.com/dog2.jpg",
+    "caption": "Soft watercolor portrait, blue background",
+    "tags": ["dog", "watercolor", "portrait", "blue"]
+  }
+]
