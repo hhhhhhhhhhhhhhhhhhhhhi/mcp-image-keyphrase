@@ -3,6 +3,7 @@ const ctx = canvas.getContext('2d');
 const colorInput = document.getElementById('color');
 const sizeInput = document.getElementById('size');
 const brushBtn = document.getElementById('brush');
+const proBtn = document.getElementById('pro');
 const bucketBtn = document.getElementById('bucket');
 const clearBtn = document.getElementById('clear');
 const saveBtn = document.getElementById('save');
@@ -11,6 +12,7 @@ let currentColor = colorInput.value;
 let brushSize = Number(sizeInput.value);
 let drawing = false;
 let tool = 'brush';
+let lastMirrorPos = null;
 
 function setActive(btn) {
   document.querySelectorAll('.tool').forEach(b => b.classList.remove('active'));
@@ -20,6 +22,11 @@ function setActive(btn) {
 brushBtn.addEventListener('click', () => {
   tool = 'brush';
   setActive(brushBtn);
+});
+
+proBtn.addEventListener('click', () => {
+  tool = 'pro';
+  setActive(proBtn);
 });
 
 bucketBtn.addEventListener('click', () => {
@@ -36,32 +43,57 @@ sizeInput.addEventListener('input', e => {
 });
 
 canvas.addEventListener('mousedown', e => {
-  const { x, y } = getCanvasPos(e);
-  if (tool === 'brush') {
+  const pos = getCanvasPos(e);
+  if (tool === 'brush' || tool === 'pro') {
     drawing = true;
     ctx.strokeStyle = currentColor;
     ctx.lineWidth = brushSize;
     ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(x, y);
+    if (tool === 'brush') {
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    } else {
+      drawDot(pos);
+      lastMirrorPos = getMirrorPos(pos);
+      drawDot(lastMirrorPos);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    }
   } else if (tool === 'bucket') {
-    floodFill(x, y, hexToRgb(currentColor));
+    floodFill(pos.x, pos.y, hexToRgb(currentColor));
   }
 });
 
 canvas.addEventListener('mousemove', e => {
   if (!drawing) return;
-  const { x, y } = getCanvasPos(e);
-  ctx.lineTo(x, y);
-  ctx.stroke();
+  const pos = getCanvasPos(e);
+  if (tool === 'brush') {
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  } else if (tool === 'pro') {
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    const mirror = getMirrorPos(pos);
+    ctx.beginPath();
+    ctx.moveTo(lastMirrorPos.x, lastMirrorPos.y);
+    ctx.lineTo(mirror.x, mirror.y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    lastMirrorPos = mirror;
+  }
 });
 
 canvas.addEventListener('mouseup', () => {
   drawing = false;
+  lastMirrorPos = null;
+  ctx.beginPath();
 });
 
 canvas.addEventListener('mouseleave', () => {
   drawing = false;
+  lastMirrorPos = null;
+  ctx.beginPath();
 });
 
 clearBtn.addEventListener('click', () => {
@@ -84,6 +116,24 @@ function getCanvasPos(e) {
 function hexToRgb(hex) {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return m ? { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) } : { r: 0, g: 0, b: 0 };
+}
+
+function getMirrorPos(pos) {
+  return {
+    x: Math.min(canvas.width, Math.max(0, canvas.width - pos.x)),
+    y: pos.y
+  };
+}
+
+function drawDot(pos) {
+  ctx.save();
+  ctx.fillStyle = currentColor;
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, brushSize / 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.beginPath();
+  ctx.moveTo(pos.x, pos.y);
 }
 
 function floodFill(startX, startY, fillColor) {
